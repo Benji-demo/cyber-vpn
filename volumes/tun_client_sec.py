@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-import os, fcntl, struct, socket, select,hashlib
+import os, fcntl, struct, socket, select,hashlib, sys, atexit
 from scapy.all import *
 
-SECRET = b"vpn_secret"  # Shared secret for auth + integrity(bad practice to have hard coded secret)
+SECRET = sys.argv[1].encode() if len(sys.argv) > 1 else b"defaultpass" # Shared secret for auth + integrity(bad practice to have hard coded secret)
 authenticated = False   # To track auth state (on server)
 
 def add_hash(packet):
@@ -42,6 +42,9 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 auth_msg = b'AUTH:' + SECRET
 sock.sendto(add_hash(auth_msg), (SERVER_IP, SERVER_PORT))
 print("🔐 Sent authentication packet")
+with open("/tmp/vpn_connected", "w") as f:
+    f.write("ok")
+atexit.register(lambda: os.path.exists("/tmp/vpn_connected") and os.remove("/tmp/vpn_connected"))
 
 # === Select loop ===
 while True:
