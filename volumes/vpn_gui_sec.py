@@ -8,13 +8,16 @@ import sys
 import subprocess
 import requests
 import os
-
+import netifaces
 
 def get_ip():
     try:
-        return requests.get("https://api.ipify.org").text
+        with open("/tmp/vpn_ifname") as f:
+            ifname = f.read().strip()
+        addrs = netifaces.ifaddresses(ifname)
+        return addrs[netifaces.AF_INET][0]['addr']
     except:
-        return "IP Unavailable"
+        return "VPN IP Unavailable"
 
 
 class VPNApp(QWidget):
