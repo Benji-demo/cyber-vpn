@@ -27,6 +27,9 @@ tun = os.open("/dev/net/tun", os.O_RDWR)
 ifr = struct.pack('16sH', b'bini%d', IFF_TUN | IFF_NO_PI)
 ifname_bytes = fcntl.ioctl(tun, TUNSETIFF, ifr)
 ifname = ifname_bytes.decode('UTF-8')[:16].strip('\x00')
+with open("/tmp/vpn_ifname", "w") as f:
+    f.write(ifname)
+atexit.register(lambda: os.path.exists("/tmp/vpn_ifname") and os.remove("/tmp/vpn_ifname"))
 print("TUN interface:", ifname)
 
 os.system(f"ip addr add 192.168.53.99/24 dev {ifname}")
