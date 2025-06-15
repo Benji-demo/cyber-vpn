@@ -7,6 +7,19 @@ docker-compose build
 docker-compose up -d
 ```
 
+## Install needed stuff for GUI
+```bash
+# Create a virtual environment
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate
+
+# Now install packages
+pip install PyQt5 scapy requests
+```
+
+
 ## Enter Containers
 - use multiple terminal and enter then run
 ```bash
@@ -26,8 +39,11 @@ sudo ./tun_client.py
 
 - then try ping-ing this from the vpn client side
 ```bash
-ping 192.168.60.5
+ping 192.168.60.5 # Pc on internal network
+ping 192.168.53.1 # vpn server
 ```
+If this works then the vpn is doing a proper tunnuling
+
 ### This is for the attacker scenario
 - do
 ```bash
