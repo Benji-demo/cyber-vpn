@@ -1,5 +1,8 @@
 # 🚀 VPN Tunnel Lab – Quick Run Guide
 
+The network looks like this with attacker added on this
+![image](https://github.com/user-attachments/assets/10941990-c23a-462f-9e10-5964503588b6)
+
 ## 🛠️ Build and Start
 
 ```bash
@@ -18,7 +21,9 @@ source venv/bin/activate
 # Now install packages
 pip install PyQt5 scapy requests
 ```
-
+## Start the GUI
+- run ./volume/vpn_GUI_sec.py
+- password = vpn_secret
 
 ## Enter Containers
 - use multiple terminal and enter then run
@@ -27,6 +32,7 @@ docker exec -it client-10.9.0.5 /bin/bash        # VPN Client
 docker exec -it server-router /bin/bash          # VPN Server
 docker exec -it host-192.168.60.5 /bin/bash      # Host V (for telnet)
 ```
+
 ## Run
 ```bash
 chmod +x tun_server.py
