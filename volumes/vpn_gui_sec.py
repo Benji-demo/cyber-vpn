@@ -6,15 +6,23 @@ from PyQt5.QtGui import QFont, QCursor, QColor, QRegion
 from PyQt5.QtCore import Qt, QTimer
 import sys
 import subprocess
-import requests
 import os
-
+import psutil
+import socket
 
 def get_ip():
     try:
-        return requests.get("https://api.ipify.org").text
-    except:
+        with open("/tmp/vpn_ifname") as f:
+            ifname = f.read().strip()
+        for iface, snics in psutil.net_if_addrs().items():
+            if iface == ifname:
+                for snic in snics:
+                    if snic.family == socket.AF_INET:
+                        return snic.address
+        return "IP Not Found"
+    except Exception:
         return "IP Unavailable"
+
 
 
 class VPNApp(QWidget):
