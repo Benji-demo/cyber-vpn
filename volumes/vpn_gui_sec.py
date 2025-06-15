@@ -201,12 +201,15 @@ class VPNApp(QWidget):
 
         if not self.connected:
             try:
+#                 self.vpn_process = subprocess.Popen([
+#     "gnome-terminal", "--", "sudo", "python3", "tun_client_sec.py", password
+# ])
                 self.vpn_process = subprocess.Popen(
                     ["sudo", "python3", "tun_client_sec.py", password],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
-                QTimer.singleShot(1500, self.check_vpn_status)
+                QTimer.singleShot(15000, self.check_vpn_status)
             except Exception as e:
                 QMessageBox.critical(self, "Connection Error", f"Failed to start VPN client.\n\n{str(e)}")
         else:
@@ -231,7 +234,7 @@ class VPNApp(QWidget):
             self.connected = False
 
     def check_vpn_status(self):
-        if os.path.exists("/tmp/vpn_connected"):
+        if os.path.exists("vpn_connected"):
             self.status_label.setText("Connected")
             self.status_label.setStyleSheet("color: #66ff99;")
             self.explain_label.setText("Your internet is private.")

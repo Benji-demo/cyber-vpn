@@ -1,24 +1,11 @@
 #!/usr/bin/env python3
-from collections import defaultdict
-import time
+
 import os, fcntl, struct, socket, select, hashlib
 from scapy.all import *
 
 SECRET = b"vpn_secret"
 authenticated = False
 client_addr = None
-IP_POOL = defaultdict(bool)  # Tracks assigned IPs
-IP_POOL["192.168.53.1"] = True  # Reserve server IP
-LEASE_TIME = 3600  # 1 hour lease (adjust as needed)
-
-def assign_ip():
-    """Assigns the next available IP in 192.168.53.2-254 range"""
-    for i in range(2, 255):
-        ip = f"192.168.53.{i}"
-        if not IP_POOL[ip]:
-            IP_POOL[ip] = time.time() + LEASE_TIME  # Set expiry
-            return ip
-    return None 
 
 def add_hash(packet):
     h = hashlib.sha256(SECRET + packet).digest()
@@ -30,7 +17,6 @@ def verify_hash(data):
     packet, recv_hash = data[:-32], data[-32:]
     calc_hash = hashlib.sha256(SECRET + packet).digest()
     return (recv_hash == calc_hash), packet
-
 
 # === TUN Setup ===
 TUNSETIFF = 0x400454ca
@@ -52,38 +38,43 @@ PORT = 9090
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((IP_A, PORT))
 
-client_addr = None
-# client_last_seen = None
-# TIMEOUT = 10
-
 while True:
     ready, _, _ = select.select([tun, sock], [], [])
     for fd in ready:
         if fd == sock:
-            data, client_addr = sock.recvfrom(2048)
-            ok, packet = verify_hash(data)
+            try:
+                data, addr = sock.recvfrom(2048)
+                ok, packet = verify_hash(data)
 
-            if not authenticated:
-                if packet == b'AUTH:' + SECRET:
-                    authenticated = True
-                    client_ip = assign_ip()
-                    if client_ip:
-                        sock.sendto(add_hash(f"ASSIGN_IP:{client_ip}".encode()), client_addr)
-                        print(f"✅ Assigned {client_ip} to {client_addr}")
+                if not authenticated:
+                    if packet == b'AUTH:' + SECRET:
+                        print(f"✅ Client authenticated from {addr}")
+                        authenticated = True
+                        client_addr = addr
+                        continue
                     else:
-                        sock.sendto(add_hash(b"NO_IPS_AVAILABLE"), client_addr)
+                        print("❌ Auth failed. Dropping packet.")
+                        continue
+
+                if not ok:
+                    print("Packet failed integrity check. Dropped.")
                     continue
 
-            if ok:
+                if len(packet) < 20:
+                    print("❌ Packet too short to be valid IP — dropped.")
+                    continue
+
                 try:
                     pkt = IP(packet)
                     print("From socket <==", pkt.summary())
                     os.write(tun, packet)
                 except Exception as e:
-                    print(f"🛑 Failed to parse packet as IP: {e}")
-            else:
-                print("Packet failed integrity check. Dropped.")
+                    print(f"❌ Packet parsing failed: {e}")
+                    continue
 
+            except Exception as e:
+                print(f"❌ Error receiving or handling packet: {e}")
+                continue
 
         elif fd == tun:
             packet = os.read(tun, 2048)
@@ -93,4 +84,3 @@ while True:
                 sock.sendto(add_hash(packet), client_addr)
             else:
                 print("Client address unknown. Skipping packet.")
-
